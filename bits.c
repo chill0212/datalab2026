@@ -18,8 +18,8 @@
  * Max ops: 7
  * Difficulty: 1
  */
-int bitAnd(int x, int y) {
-    return 2;
+int bitAnd(int a, int b) {
+    return ~(~a | ~b);
 }
 
 /*
@@ -29,8 +29,8 @@ int bitAnd(int x, int y) {
  *   Max ops: 7
  *   Difficulty: 1
  */
-int bitXor(int x, int y) {
-    return 2;
+int bitXor(int a1, int a2) {
+    return ~(~a1 & ~a2) & ~(a1 & a2);
 }
 
 /*
@@ -49,8 +49,10 @@ int bitXor(int x, int y) {
  * Returns:
  *   1 if x and y have the same sign , 0 otherwise.
  */
-int samesign(int x, int y) {
-    return 2;
+int samesign(int aa, int bb) {
+    if (!aa && !bb) return 1;
+    if (!aa ^ !bb) return 0;
+    return !((aa>>31) ^ (bb>>31));
 }
 
 /*
@@ -62,8 +64,32 @@ int samesign(int x, int y) {
  *   Max ops: 25
  *   Difficulty: 4
  */
-int logtwo(int v) {
-    return 2;
+int logtwo(int aa){
+    int r=0;
+    int c,s;
+    c=(aa>>16)>0;
+    s=c<<4;
+    r = r | s;
+    aa = aa >> s;
+
+    c=(aa>>8)>0;
+    s=c<<3;
+    r = r | s;
+    aa = aa >> s;
+
+    c=(aa>>4)>0;
+    s=c<<2;
+    r = r | s;
+    aa = aa >> s;
+
+    c=(aa>>2)>0;
+    s=c<<1;
+    r = r | s;
+    aa = aa >> s;
+
+    c=(aa>>1)>0;
+    r = r | c;
+    return r;
 }
 
 /*
@@ -76,7 +102,15 @@ int logtwo(int v) {
  *    Difficulty: 2
  */
 int byteSwap(int x, int n, int m) {
-    return 2;
+    int s1=n<<3;
+    int s2=m<<3;
+    int b1=(x>>s1) & 0xFF;
+    int b2=(x>>s2) & 0xFF;
+    int k1=0xFF<<s1;
+    int k2=0xFF<<s2;
+    x = x & ~(k1 | k2);
+    x = x | (b1<<s2) | (b2<<s1);
+    return x;
 }
 
 /*
@@ -88,7 +122,12 @@ int byteSwap(int x, int n, int m) {
  *   Difficulty: 3
  */
 unsigned reverse(unsigned v) {
-    return 2;
+    unsigned o=0;
+    for(int i=32;i;i--){
+        o=(o<<1) | (v & 1);
+        v=v>>1;
+    }
+    return o;
 }
 
 /*
@@ -100,7 +139,8 @@ unsigned reverse(unsigned v) {
  *   Difficulty: 3
  */
 int logicalShift(int x, int n) {
-    return 2;
+    int m=~(1<<31>>n<<1);
+    return (x>>n) & m;
 }
 
 /*
@@ -111,8 +151,46 @@ int logicalShift(int x, int n) {
  *   Max ops: 50
  *   Difficulty: 4
  */
-int leftBitCount(int x) {
-    return 2;
+int leftBitCount(int a) {
+    int c=0;
+    int t,cc,ss;
+
+    t=a>>16;
+    cc=!~t;
+    ss=cc<<4;
+    c=c+ss;
+    a=a<<ss;
+
+    t=a>>24;
+    cc=!~t;
+    ss=cc<<3;
+    c=c+ss;
+    a=a<<ss;
+
+    t=a>>28;
+    cc=!~t;
+    ss=cc<<2;
+    c=c+ss;
+    a=a<<ss;
+
+    t=a>>30;
+    cc=!~t;
+    ss=cc<<1;
+    c=c+ss;
+    a=a<<ss;
+
+    t=a>>31;
+    cc=!~t;
+    ss=cc;
+    c=c+ss;
+    a=a<<ss;
+
+    t=a>>31;
+    cc=!~t;
+    ss=cc;
+    c=c+ss;
+
+    return c;
 }
 
 /*
@@ -124,7 +202,34 @@ int leftBitCount(int x) {
  *   Difficulty: 4
  */
 unsigned float_i2f(int x) {
-    return 2;
+    unsigned s=x&0x80000000;
+    unsigned ax=x;
+    if(x<0) ax=-x;
+    if(ax==0) return 0;
+    int e=31;
+    while(!(ax>>e)) e--;
+    unsigned ex=(e+127)<<23;
+    unsigned f=0;
+    if(e<24){
+        f=(ax<<(23-e))&0x7FFFFF;
+    } else {
+        int sh=e-23;
+        f=(ax>>sh)&0x7FFFFF;
+        unsigned p=1<<sh;
+        unsigned mk=p-1;
+        unsigned h=p>>1;
+        unsigned r=ax&mk;
+        if(r>h){
+            f++;
+        }else if(r==h){
+            if(f & 1) f++;
+        }
+        if(f==0x800000){
+            ex+=1<<23;
+            f=0;
+        }
+    }
+    return s | ex | f;
 }
 
 /*
@@ -139,7 +244,26 @@ unsigned float_i2f(int x) {
  *   Difficulty: 4
  */
 unsigned floatScale2(unsigned uf) {
-    return 2;
+    unsigned s=uf&0x80000000;
+    unsigned e=(uf>>23)&0xFF;
+    unsigned f=uf&0x7FFFFF;
+    if(e==0xFF){
+        return uf;
+    }
+    if(e==0){
+        if(f==0) return uf;
+        f=f<<1;
+        if(f&0x800000){
+            e=1;
+            f=f&0x7FFFFF;
+        }
+    }else{
+        e=e+1;
+        if(e==0xFF){
+            return s | 0x7F800000;
+        }
+    }
+    return s | (e<<23) | f;
 }
 
 /*
@@ -156,7 +280,37 @@ unsigned floatScale2(unsigned uf) {
  *   Difficulty: 3
  */
 int float64_f2i(unsigned uf1, unsigned uf2) {
-    return 2;
+    unsigned s=uf2>>31;
+    unsigned e=(uf2>>20) & 0x7FF;
+    unsigned fh=uf2 & 0xFFFFF;
+    unsigned fl=uf1;
+    int ee,rs;
+    unsigned mh, ml, res;
+    if(!(e-0x7FF)){
+        return 0x80000000;
+    }
+    if(!e){
+        return 0;
+    }
+    ee=e-1023;
+    if(ee<0){
+        return 0;
+    }
+    if(ee>=31){
+        return 0x80000000;
+    }
+    rs=52-ee;
+    mh=(1<<20) | fh;
+    ml=fl;
+    if(rs>=32){
+        res=mh>>(rs-32);
+    }else{
+        res=(mh<<(32-rs)) | (ml>>rs);
+    }
+    if(s){
+        res=-res;
+    }
+    return res;
 }
 
 /*
@@ -172,6 +326,16 @@ int float64_f2i(unsigned uf1, unsigned uf2) {
  *   Max ops: 30
  *   Difficulty: 4
  */
-unsigned floatPower2(int x) {
-    return 2;
+unsigned floatPower2(int x){
+    if(x>=128){
+        return 0x7F800000;
+    }
+    if(x<-149){
+        return 0; 
+    }
+    if(x>=-126){
+        return (x+127)<<23;
+    }else{
+        return 1<<(x+149);
+    }
 }
